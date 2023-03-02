@@ -1,0 +1,18 @@
+{
+  "name": "myscraper",
+  "version": "1.0.0",
+  "description": "designed to scrap bbc good food",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "jwm",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "1.0.0-rc.12",
+    "node-fetch": "^3.3.0",
+    "request": "^2.69.0",
+    "tsc": "^2.0.4"
+  }
+}
