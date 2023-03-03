@@ -21,7 +21,7 @@ const getData: (url: string) => Promise<string> = async (url) => {
   return body;
 };
 
-const scrape = (body) => {
+const scrape: (body: string) => Data = (body: string) => {
   let $ = load(body);
 
   let ingredientsWithQuantities: string[] = [];
@@ -68,16 +68,16 @@ const scrape = (body) => {
   return data;
 };
 
-const siteMap = "https://www.bbc.co.uk/food/sitemap.xml";
+const siteMap: string = "https://www.bbc.co.uk/food/sitemap.xml";
 
 const response = await fetch(siteMap);
 const body = await response.text();
 
 let $ = load(body);
 
-let recipieURLs = [];
+let recipieURLs: string[] = [];
 $("loc").each((_i, data) => {
-  const url = $(data).text();
+  const url: string = $(data).text();
   if (url.includes("https://www.bbc.co.uk/food/recipes/")) {
     recipieURLs.push(url);
   }
@@ -88,7 +88,7 @@ $("loc").each((_i, data) => {
 //need to code in vegetarian, vegan, glutenfree, descriptions, id?
 
 for (let i = 0; i < 10257; i++) {
-  let url = recipieURLs[i];
+  let url: string = recipieURLs[i];
   getData(url)
     .then((result) => scrape(result))
     .then((res) => {
