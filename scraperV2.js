@@ -67,13 +67,16 @@ $("loc").each((_i, data) => {
   }
 });
 
-const urlLess = recipieURLs.slice(0, 10);
+//10257 recipes in recipie urls
 
-urlLess.forEach((url) => {
+//need to code in vegetarian, vegan, glutenfree, descriptions, id?
+
+for (let i = 0; i < 10257; i++) {
+  let url = recipieURLs[i];
   getData(url)
     .then((result) => scrape(result))
     .then((res) => {
       console.log(res);
       //post or push requests in here
     });
-});
+}
