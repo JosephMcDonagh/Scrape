@@ -1,5 +1,5 @@
 import fetch from "node-fetch";
-import { load } from "cheerio";
+import { Cheerio, load } from "cheerio";
 
 interface Data {
   name: string;
@@ -35,22 +35,45 @@ const scrape: (body: string) => Data = (body: string) => {
   let glutenFreeBool: boolean = false;
   let vegetarianBool: boolean = false;
   let servings: string = "";
-  $(".recipe-ingredients__list-item").each((_i, data) => {
-    const ingredient: string = $(data).text();
-    ingredientsWithQuantities.push(ingredient);
+
+  (
+    $(".recipe-ingredients__list-item") as unknown as Cheerio<string>
+  ).each<string>(function (i: number, elem: string) {
+    ingredientsWithQuantities[i] = $(this).text();
   });
-  $(".recipe-ingredients__link").each((_i, data) => {
-    const ingredient: string = $(data).text();
-    ingredients.push(ingredient);
-  });
-  $(".recipe-method__list-item p").each((_i, data) => {
-    const methodItem: string = $(data).text();
-    method.push(methodItem);
-  });
+  ($(".recipe-ingredients__link") as unknown as Cheerio<string>).each(
+    (_i: number, data: string) => {
+      const ingredient: string = $(data).text();
+      ingredients.push(ingredient);
+    }
+  );
+  ($(".recipe-method__list-item p") as unknown as Cheerio<string>).each(
+    (_i: number, data: string) => {
+      const methodItem: string = $(data).text();
+      method.push(methodItem);
+    }
+  );
   title = $("h1").first().text();
   servings = $(".recipe-metadata__serving").first().text();
   prep = $(".recipe-metadata__prep-time").first().text();
   cook = $(".recipe-metadata__cook-time").first().text();
+  describe = $(".recipe-description__text").first().text();
+
+  const vegetarian: string = $(
+    ".recipe-metadata__dietary-vegetarian-text"
+  ).text();
+
+  if (vegetarian.length > 0) {
+    vegetarianBool = true;
+  }
+
+  if (title.toLowerCase().includes("vegan")) {
+    veganBool = true;
+  }
+
+  if (title.toLowerCase().includes("gluten-free")) {
+    glutenFreeBool = true;
+  }
 
   const data: Data = {
     name: title,
@@ -76,23 +99,32 @@ const body = await response.text();
 let $ = load(body);
 
 let recipieURLs: string[] = [];
-$("loc").each((_i, data) => {
+($("loc") as unknown as Cheerio<string>).each((_i: number, data: string) => {
   const url: string = $(data).text();
   if (url.includes("https://www.bbc.co.uk/food/recipes/")) {
     recipieURLs.push(url);
   }
 });
 
-//10257 recipes in recipie urls
+//10270 recipes in recipie urls
 
-//need to code in vegetarian, vegan, glutenfree, descriptions, id?
+//need to code in id?
 
-for (let i = 0; i < 10257; i++) {
+for (let i = 0; i < 10270; i++) {
   let url: string = recipieURLs[i];
   getData(url)
     .then((result) => scrape(result))
     .then((res) => {
-      console.log(res);
+      console.log(res.description);
       //post or push requests in here
     });
 }
+
+//code below for testing individual recipies
+
+// getData("https://www.bbc.co.uk/food/recipes/gluten-free_ham_and_95654")
+//   .then((result) => scrape(result))
+//   .then((res) => {
+//     console.log(res);
+//     //post or push requests in here
+//   });
