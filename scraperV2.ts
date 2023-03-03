@@ -1,7 +1,21 @@
 import fetch from "node-fetch";
 import { load } from "cheerio";
 
-const getData = async (url) => {
+interface Data {
+  name: string;
+  ingredientsWithQuantities: string[];
+  ingredients: string[];
+  description: string;
+  method: string[];
+  prepTime: string;
+  cookTime: string;
+  vegetarian: boolean;
+  vegan: boolean;
+  glutenFree: boolean;
+  servings: string;
+}
+
+const getData: (url: string) => Promise<string> = async (url) => {
   const response = await fetch(url);
   const body = await response.text();
   return body;
@@ -10,26 +24,27 @@ const getData = async (url) => {
 const scrape = (body) => {
   let $ = load(body);
 
-  let ingredientsWithQuantities = [];
-  let ingredients = [];
-  let method = [];
-  let prep = "";
-  let cook = "";
-  let title = "";
-  let veganBool = false;
-  let glutenFreeBool = false;
-  let vegetarianBool = false;
-  let servings = "";
+  let ingredientsWithQuantities: string[] = [];
+  let ingredients: string[] = [];
+  let describe: string = "";
+  let method: string[] = [];
+  let prep: string = "";
+  let cook: string = "";
+  let title: string = "";
+  let veganBool: boolean = false;
+  let glutenFreeBool: boolean = false;
+  let vegetarianBool: boolean = false;
+  let servings: string = "";
   $(".recipe-ingredients__list-item").each((_i, data) => {
-    const ingredient = $(data).text();
+    const ingredient: string = $(data).text();
     ingredientsWithQuantities.push(ingredient);
   });
   $(".recipe-ingredients__link").each((_i, data) => {
-    const ingredient = $(data).text();
+    const ingredient: string = $(data).text();
     ingredients.push(ingredient);
   });
   $(".recipe-method__list-item p").each((_i, data) => {
-    const methodItem = $(data).text();
+    const methodItem: string = $(data).text();
     method.push(methodItem);
   });
   title = $("h1").first().text();
@@ -37,10 +52,11 @@ const scrape = (body) => {
   prep = $(".recipe-metadata__prep-time").first().text();
   cook = $(".recipe-metadata__cook-time").first().text();
 
-  const data = {
+  const data: Data = {
     name: title,
     ingredientsWithQuantities: ingredientsWithQuantities,
     ingredients: ingredients,
+    description: describe,
     method: method,
     prepTime: prep,
     cookTime: cook,
