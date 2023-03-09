@@ -1,10 +1,11 @@
 import fetch from "node-fetch";
 import { Cheerio, load } from "cheerio";
+import fs from "fs";
 
 interface Data {
   name: string;
   ingredientsWithQuantities: string[];
-  ingredients: string[];
+  ingredients: Ingredient[];
   description: string;
   method: string[];
   prepTime: string;
@@ -13,6 +14,10 @@ interface Data {
   vegan: boolean;
   glutenFree: boolean;
   servings: string;
+  imgURL: string;
+}
+interface Ingredient {
+  name: string;
 }
 
 const getData: (url: string) => Promise<string> = async (url) => {
@@ -25,7 +30,7 @@ const scrape: (body: string) => Data = (body: string) => {
   let $ = load(body);
 
   let ingredientsWithQuantities: string[] = [];
-  let ingredients: string[] = [];
+  let ingredients: Ingredient[] = [];
   let describe: string = "";
   let method: string[] = [];
   let prep: string = "";
@@ -35,6 +40,7 @@ const scrape: (body: string) => Data = (body: string) => {
   let glutenFreeBool: boolean = false;
   let vegetarianBool: boolean = false;
   let servings: string = "";
+  let imageURL: string = "";
 
   (
     $(".recipe-ingredients__list-item") as unknown as Cheerio<string>
@@ -44,7 +50,7 @@ const scrape: (body: string) => Data = (body: string) => {
   ($(".recipe-ingredients__link") as unknown as Cheerio<string>).each(
     (_i: number, data: string) => {
       const ingredient: string = $(data).text();
-      ingredients.push(ingredient);
+      ingredients.push({ name: ingredient });
     }
   );
   ($(".recipe-method__list-item p") as unknown as Cheerio<string>).each(
@@ -62,6 +68,10 @@ const scrape: (body: string) => Data = (body: string) => {
   const vegetarian: string = $(
     ".recipe-metadata__dietary-vegetarian-text"
   ).text();
+
+  if ($("div").hasClass("recipe-media")) {
+    imageURL = $(".recipe-media div").find("img").attr("src") || "";
+  }
 
   if (vegetarian.length > 0) {
     vegetarianBool = true;
@@ -87,6 +97,7 @@ const scrape: (body: string) => Data = (body: string) => {
     vegan: veganBool,
     glutenFree: glutenFreeBool,
     servings: servings,
+    imgURL: imageURL,
   };
   return data;
 };
@@ -106,7 +117,8 @@ let recipieURLs: string[] = [];
   }
 });
 
-//10270 recipes in recipie urls
+// console.log(recipieURLs.length);
+// 10270 recipes in recipie urls
 
 //need to code in id?
 
@@ -115,7 +127,13 @@ for (let i = 0; i < 10270; i++) {
   getData(url)
     .then((result) => scrape(result))
     .then((res) => {
-      console.log(res.description);
+      // fs.appendFile("first_10_recipes.json", JSON.stringify(res), (err) => {
+      //   if (err) {
+      //     throw err;
+      //   }
+      //   console.log(res);
+      // });
+      // console.log(res.imgURL);
       //post or push requests in here
     });
 }
