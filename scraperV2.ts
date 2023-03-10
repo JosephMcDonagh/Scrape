@@ -4,20 +4,46 @@ import fs from "fs";
 
 interface Data {
   name: string;
-  ingredientsWithQuantities: string[];
+  ingredientsAndQuantities: string;
   ingredients: Ingredient[];
   description: string;
-  method: string[];
+  method: string;
   prepTime: string;
   cookTime: string;
   vegetarian: boolean;
   vegan: boolean;
   glutenFree: boolean;
   servings: string;
-  imgURL: string;
+  image: string;
 }
 interface Ingredient {
   name: string;
+}
+
+async function addRecipe(recipe: Data) {
+  try {
+    const response = await fetch("http://localhost:8081/api/v1/recipes", {
+      method: "POST",
+      body: JSON.stringify(recipe),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.log(response.status);
+      throw new Error(`Error! status: ${response.status}`);
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.log("error message: ", error.message);
+      console.log(error);
+      return error.message;
+    } else {
+      console.log("unexpected error: ", error);
+      return "An unexpected error occurred";
+    }
+  }
 }
 
 const getData: (url: string) => Promise<string> = async (url) => {
@@ -29,10 +55,10 @@ const getData: (url: string) => Promise<string> = async (url) => {
 const scrape: (body: string) => Data = (body: string) => {
   let $ = load(body);
 
-  let ingredientsWithQuantities: string[] = [];
+  let ingredientsAndQuantities: string = "";
   let ingredients: Ingredient[] = [];
   let describe: string = "";
-  let method: string[] = [];
+  let method: string = "";
   let prep: string = "";
   let cook: string = "";
   let title: string = "";
@@ -45,7 +71,7 @@ const scrape: (body: string) => Data = (body: string) => {
   (
     $(".recipe-ingredients__list-item") as unknown as Cheerio<string>
   ).each<string>(function (i: number, elem: string) {
-    ingredientsWithQuantities[i] = $(this).text();
+    ingredientsAndQuantities = ingredientsAndQuantities + "$" + $(this).text();
   });
   ($(".recipe-ingredients__link") as unknown as Cheerio<string>).each(
     (_i: number, data: string) => {
@@ -56,7 +82,7 @@ const scrape: (body: string) => Data = (body: string) => {
   ($(".recipe-method__list-item p") as unknown as Cheerio<string>).each(
     (_i: number, data: string) => {
       const methodItem: string = $(data).text();
-      method.push(methodItem);
+      method = method + "$" + methodItem;
     }
   );
   title = $("h1").first().text();
@@ -87,7 +113,7 @@ const scrape: (body: string) => Data = (body: string) => {
 
   const data: Data = {
     name: title,
-    ingredientsWithQuantities: ingredientsWithQuantities,
+    ingredientsAndQuantities: ingredientsAndQuantities,
     ingredients: ingredients,
     description: describe,
     method: method,
@@ -97,46 +123,54 @@ const scrape: (body: string) => Data = (body: string) => {
     vegan: veganBool,
     glutenFree: glutenFreeBool,
     servings: servings,
-    imgURL: imageURL,
+    image: imageURL,
   };
   return data;
 };
 
-const siteMap: string = "https://www.bbc.co.uk/food/sitemap.xml";
+// const siteMap: string = "https://www.bbc.co.uk/food/sitemap.xml";
 
-const response = await fetch(siteMap);
-const body = await response.text();
+// const response = await fetch(siteMap);
+// const body = await response.text();
 
-let $ = load(body);
+// let $ = load(body);
 
-let recipieURLs: string[] = [];
-($("loc") as unknown as Cheerio<string>).each((_i: number, data: string) => {
-  const url: string = $(data).text();
-  if (url.includes("https://www.bbc.co.uk/food/recipes/")) {
-    recipieURLs.push(url);
-  }
-});
+// let recipieURLs: string[] = [];
+// ($("loc") as unknown as Cheerio<string>).each((_i: number, data: string) => {
+//   const url: string = $(data).text();
+//   if (url.includes("https://www.bbc.co.uk/food/recipes/")) {
+//     recipieURLs.push(url);
+//   }
+// });
+// fs.writeFile("recipeURL.json", JSON.stringify(recipieURLs), (err) => {
+//   if (err) {
+//     throw err;
+//   }
+// });
 
-// console.log(recipieURLs.length);
 // 10270 recipes in recipie urls
 
-//need to code in id?
+let recipeURLs: string[];
 
-for (let i = 0; i < 10270; i++) {
-  let url: string = recipieURLs[i];
-  getData(url)
-    .then((result) => scrape(result))
-    .then((res) => {
-      // fs.appendFile("first_10_recipes.json", JSON.stringify(res), (err) => {
-      //   if (err) {
-      //     throw err;
-      //   }
-      //   console.log(res);
-      // });
-      // console.log(res.imgURL);
-      //post or push requests in here
-    });
-}
+fs.readFile(
+  "recipeURL.json",
+  "utf-8",
+  (err: NodeJS.ErrnoException | null, data: string) => {
+    if (err) {
+      throw err;
+    }
+    recipeURLs = JSON.parse(data);
+    for (let i = 0; i < 50; i++) {
+      let url: string = recipeURLs[i];
+      getData(url)
+        .then((result) => scrape(result))
+        .then((res) => {
+          console.log(res);
+          addRecipe(res);
+        });
+    }
+  }
+);
 
 //code below for testing individual recipies
 
@@ -145,4 +179,4 @@ for (let i = 0; i < 10270; i++) {
 //   .then((res) => {
 //     console.log(res);
 //     //post or push requests in here
-//   });
+//   })
