@@ -128,6 +128,42 @@ const scrape: (body: string) => Data = (body: string) => {
   return data;
 };
 
+let recipeURLs: string[];
+
+fs.readFile(
+  "recipeURL.json",
+  "utf-8",
+  (err: NodeJS.ErrnoException | null, data: string) => {
+    if (err) {
+      throw err;
+    }
+    recipeURLs = JSON.parse(data);
+    for (let i = 0; i < 10; i++) {
+      let url: string = recipeURLs[i];
+      getData(url)
+        .then((result) => scrape(result))
+        .then((res) => {
+          addRecipe(res);
+        });
+    }
+  }
+);
+
+//
+//
+//
+// fs.appendFile(
+//   "first_10_recipes.json",
+//   JSON.stringify(res) + ",",
+//   (err) => {
+//     if (err) {
+//       throw err;
+//     }
+//   }
+// );
+
+//
+//
 // const siteMap: string = "https://www.bbc.co.uk/food/sitemap.xml";
 
 // const response = await fetch(siteMap);
@@ -148,35 +184,4 @@ const scrape: (body: string) => Data = (body: string) => {
 //   }
 // });
 
-// 10270 recipes in recipie urls
-
-let recipeURLs: string[];
-
-fs.readFile(
-  "recipeURL.json",
-  "utf-8",
-  (err: NodeJS.ErrnoException | null, data: string) => {
-    if (err) {
-      throw err;
-    }
-    recipeURLs = JSON.parse(data);
-    for (let i = 0; i < 50; i++) {
-      let url: string = recipeURLs[i];
-      getData(url)
-        .then((result) => scrape(result))
-        .then((res) => {
-          console.log(res);
-          addRecipe(res);
-        });
-    }
-  }
-);
-
-//code below for testing individual recipies
-
-// getData("https://www.bbc.co.uk/food/recipes/gluten-free_ham_and_95654")
-//   .then((result) => scrape(result))
-//   .then((res) => {
-//     console.log(res);
-//     //post or push requests in here
-//   })
+// 10200 recipes in recipie urls
