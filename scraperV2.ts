@@ -20,30 +20,14 @@ interface Ingredient {
   name: string;
 }
 
-async function addRecipe(recipe: Data) {
-  try {
-    const response = await fetch("http://localhost:8081/api/v1/recipes", {
-      method: "POST",
-      body: JSON.stringify(recipe),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      console.log(response.status);
-      throw new Error(`Error! status: ${response.status}`);
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      console.log("error message: ", error.message);
-      console.log(error);
-      return error.message;
-    } else {
-      console.log("unexpected error: ", error);
-      return "An unexpected error occurred";
-    }
-  }
+function addRecipe(recipe: string[]) {
+  const response = fetch("http://localhost:8081/api/v1/recipes/all", {
+    method: "POST",
+    body: JSON.stringify(recipe),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 }
 
 const getData: (url: string) => Promise<string> = async (url) => {
@@ -52,7 +36,7 @@ const getData: (url: string) => Promise<string> = async (url) => {
   return body;
 };
 
-const scrape: (body: string) => Data = (body: string) => {
+const scrape: (body: string) => Promise<Data> = async (body: string) => {
   let $ = load(body);
 
   let ingredientsAndQuantities: string = "";
@@ -111,10 +95,22 @@ const scrape: (body: string) => Data = (body: string) => {
     glutenFreeBool = true;
   }
 
+  let ingredientsAsStrings: string[] = [];
+  let ingredientsUniqueObj: Ingredient[] = [];
+  for (let i = 0; i < ingredients.length; i++) {
+    ingredientsAsStrings.push(JSON.stringify(ingredients[i]));
+  }
+  const ingredientsUniqueStrings = Array.from(new Set(ingredientsAsStrings));
+  for (let i = 0; i < ingredientsUniqueStrings.length; i++) {
+    ingredientsUniqueObj.push(JSON.parse(ingredientsUniqueStrings[i]));
+  }
+
+  await sleep(200);
+
   const data: Data = {
     name: title,
     ingredientsAndQuantities: ingredientsAndQuantities,
-    ingredients: ingredients,
+    ingredients: ingredientsUniqueObj,
     description: describe,
     method: method,
     prepTime: prep,
@@ -128,26 +124,48 @@ const scrape: (body: string) => Data = (body: string) => {
   return data;
 };
 
-let recipeURLs: string[];
+let recipesURLs: string[];
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 fs.readFile(
-  "recipeURL.json",
+  "all_recipes.json",
   "utf-8",
-  (err: NodeJS.ErrnoException | null, data: string) => {
+  async (err: NodeJS.ErrnoException | null, data: string) => {
     if (err) {
       throw err;
     }
-    recipeURLs = JSON.parse(data);
-    for (let i = 0; i < 10; i++) {
-      let url: string = recipeURLs[i];
-      getData(url)
-        .then((result) => scrape(result))
-        .then((res) => {
-          addRecipe(res);
-        });
-    }
+    recipesURLs = JSON.parse(data);
+    console.log(recipesURLs.length);
+    // for (let i = 10000; i < 10200; i++) {
+    //   let url: string = recipesURLs[i];
+    //   console.log(i);
+    //   getData(url)
+    //     .then((result) => scrape(result))
+    //     .then((res) => {
+    //       if (res.image !== "") {
+    //         fs.appendFile(
+    //           "all_recipes.json",
+    //           JSON.stringify(res) + ",",
+    //           (err) => {
+    //             if (err) {
+    //               throw err;
+    //             }
+    //           }
+    //         );
+    //       }
+    //       // addRecipe(res);
+    //     })
+    //     .catch((err) => {
+    //       console.log(err);
+    //     });
+    // }
   }
 );
+
+// getData("https://www.bbc.co.uk/food/recipes/almond_and_lemon_polenta_21317")
+//   .then((result) => scrape(result))
+//   .then((res) => console.log(res));
 
 //
 //
